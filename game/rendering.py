@@ -1,0 +1,30 @@
+import pygame
+from game.settings import BLACK, BLUE, YELLOW, GREEN, PURPLE, WHITE, TILE_SIZE
+
+def draw_game(screen, game_map, pacman_pos, ghost_positions, food_positions, super_fruit_pos):
+    """ Draws game elements on the screen """
+
+    screen.fill(BLACK)  # Clear the screen
+
+    # Draw walls and objects
+    for row in range(len(game_map)):
+        for col in range(len(game_map[row])):
+            x, y = col * TILE_SIZE, row * TILE_SIZE
+            if game_map[row][col] == "#":
+                pygame.draw.rect(screen, BLUE, (x, y, TILE_SIZE, TILE_SIZE))
+            elif game_map[row][col] == "F":
+                pygame.draw.circle(screen, PURPLE, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
+
+    # Draw food
+    for food in food_positions:
+        x, y = food[1] * TILE_SIZE, food[0] * TILE_SIZE
+        pygame.draw.circle(screen, GREEN, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 8)
+
+    # Draw ghosts
+    for ghost in ghost_positions:
+        x, y = ghost[1] * TILE_SIZE, ghost[0] * TILE_SIZE
+        pygame.draw.circle(screen, WHITE, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
+
+    # Draw Pac-Man
+    x, y = pacman_pos[1] * TILE_SIZE, pacman_pos[0] * TILE_SIZE
+    pygame.draw.circle(screen, YELLOW, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
