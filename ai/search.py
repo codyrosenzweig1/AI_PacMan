@@ -50,6 +50,29 @@ def heuristic(a, b):
     """ Manhattan Distance heuristic function for A* """
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
+def is_threat_clear(tile, ghost, game_map):
+    """
+    Check if there is a clear path between a tile and a ghost.
+    If a wall '#' or a super fruit 'F' is between them, the ghost is not a threat
+    """
+    row_diff, col_diff = ghost[0] - tile[0], ghost[1] - tile[1]
+    
+    # If ghost is in the same row
+    if row_diff == 0:
+        step = 1 if col_diff > 0 else -1
+        for col in range(tile[1] + step, ghost[1], step):
+            if game_map[tile[0]][col] in ('#', 'F'):  # Wall or super fruit blocks the threat
+                return False
+            
+    # If ghost is in the same column
+    if col_diff == 0:
+        step = 1 if row_diff > 0 else -1
+        for row in range(tile[0] + step, ghost[0], step):
+            if game_map[row][tile[1]] in ('#', 'F'):  # Wall or super fruit blocks the threat
+                return False
+            
+    return True  # No blocking obstacles, ghost is a real threat
+
 def get_food_density(graph, position, food_positions):
     """ 
     Returns a score based on how many food pellets are in a nearby area.
@@ -58,25 +81,33 @@ def get_food_density(graph, position, food_positions):
     food_count = sum(1 for neighbor in graph[position] if neighbor in food_positions)
     return -10 * food_count  # Negative cost encourages food-rich areas
 
-def get_penalty(position, visited_count, ghost_positions):
+def compute_ghost_penalty(tile, ghost_positions, game_map):
     """
-    Computes the penalty for a given position based on:
-    - Ghost proximity (high penalty)
-    - Revisiting tiles (small penalty)
+    Calculates the penalty for a given tile based on its distance to ghosts.
+    If a wall or super fruit blocks the ghost, no penalty is applied.
     """
-    penalty = 0
-
-    # Ghost danger penalty
+    penalty = 0  # Default penalty (no ghost nearby)
+    
     for ghost in ghost_positions:
-        if heuristic(position, ghost) <= 2:  # If ghost is 2 tiles away or less
-            penalty += 50  # Heavy penalty for danger zones
+        distance = heuristic(tile, ghost)  # Compute Manhattan distance to ghost
+        
+        # If there's no clear threat, skip the penalty
+        if not is_threat_clear(tile, ghost, game_map):
+            continue  # Ignore this ghost if it's blocked
 
-    # Revisiting tiles penalty
-    penalty += 5 * visited_count.get(position, 0)  # Small penalty for repeated visits
-
+        if distance == 0:
+            penalty += 100  # Tile directly occupied by ghost (very high penalty)
+        elif distance == 1:
+            penalty += 50   # Immediate neighbor of ghost (high risk)
+        elif distance == 2:
+            penalty += 20   # Near ghost (medium risk)
+        elif distance == 3:
+            penalty += 10   # Further from ghost (low risk)
+        # Beyond distance 3, no penalty applied
+        
     return penalty
 
-def smarter_a_star(graph, start, food_positions, ghost_positions):
+def smarter_a_star(graph, start, goal, ghost_positions, game_map):
     """
     Smarter A* Search Algorithm for Pac-Man that considers:
     - Food clusters (higher reward)
@@ -93,27 +124,25 @@ def smarter_a_star(graph, start, food_positions, ghost_positions):
     - A list of (row, col) positions representing the best path
     """
     open_list = []
-    heappush(open_list, (0, start, []))  # (f(n), current_position, path_so_far)
-    visited_count = {}  # Tracks how many times a tile is visited
+    heappush(open_list, (0, start, []))  # (f_score, current_tile, path)
+    visited = set()
 
     while open_list:
-        f_score, current, path = heappop(open_list)
+        f_score, current, path = heappop(open_list)  # Get tile with lowest f_score
 
-        if current in food_positions:  # Stop at first food location
-            return path + [current]
+        if current in goal:
+            return path + [current]  # If we reached a frontier, return the path
 
-        # Track visits to discourage excessive backtracking
-        visited_count[current] = visited_count.get(current, 0) + 1
+        visited.add(current)
 
-        for neighbor in graph[current]:  # Explore all neighbors
-            g_score = len(path) + 1
-            h_score = min(heuristic(neighbor, food) for food in food_positions)  # Closest food cluster
-            p_score = get_penalty(neighbor, visited_count, ghost_positions) + get_food_density(graph, neighbor, food_positions)
-            f_score = g_score + h_score + p_score
+        for neighbor in graph[current]:  # Check all adjacent tiles
+            if neighbor not in visited:
+                ghost_penalty = compute_ghost_penalty(neighbor, ghost_positions, game_map)  # Dynamic ghost danger
+                g_score = len(path) + 1 + ghost_penalty  # Path cost
+                h_score = heuristic(neighbor, list(goal)[0])  # Estimated remaining cost
+                heappush(open_list, (g_score + h_score, neighbor, path + [current]))
 
-            heappush(open_list, (f_score, neighbor, path + [current]))
-
-    return []  # Return empty path if no valid path found
+    return []  # No path found
 
 def a_star(graph, start, goal):
     """
@@ -148,50 +177,3 @@ def a_star(graph, start, goal):
                 heappush(open_list, (f_score, neighbor, path + [current]))
 
     return []  # Return empty path if no valid path found
-
-
-
-
-
-def bfs(maze, start, goal):
-    """
-    Performs bfs to find the shortest path
-    
-    Returns a list of (row, col) positions representing the shortest path
-    """
-    rows, cols = len(maze), len(maze[0]) # Dimensions of the maze
-    queue = deque([(start, [])]) # Current position, path_so_far
-    visited = set()
-    bfs_exploration = []
-    
-    while queue:
-        (current, path) = queue.popleft() # get the front element
-        
-        bfs_exploration.append(current)
-        
-        # If we reach the goal, return the path
-        if current == goal:
-            return path + [current], bfs_exploration # Include final position
-        
-        # Mark as visited
-        visited.add(current)
-        
-        # Possible moves (Up, down, left , right)
-        moves = [
-            (0, 1), # Right
-            (0, -1), # Left
-            (1, 0), # Down
-            (-1, 0) # Up
-        ]
-        
-        for move in moves:
-            new_row, new_col = current[0] + move[0], current[1] + move[1]
-            new_pos = (new_row, new_col)
-            
-            # Check if new position is valid (inside the maze, not a wall)
-            if (0 <= new_row < rows and 0 <= new_col < cols and
-                maze[new_row][new_col] != "#" and new_pos not in visited):
-                
-                queue.append((new_pos, path + [current])) # Add new position -> current position and path to get there
-                
-    return [], bfs_exploration

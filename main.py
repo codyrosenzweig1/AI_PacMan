@@ -2,7 +2,7 @@
 # import random
 # from Small_Projects.Pacman.AI.search import bfs, build_graph, smarter_a_star
 
-# # Set up constants
+# Set up constants
 # WIDTH, HEIGHT = 600, 600
 # FPS = 20
 # ROWS, COLS = 15, 15  # Grid size (15x15 tiles)
@@ -145,7 +145,7 @@ from game.settings import WIDTH, HEIGHT, FPS
 from game.game_logic import update_game
 from game.rendering import draw_game
 from maps.level1 import game_map
-from ai.path_manager import get_initial_path
+from ai.path_manager import get_exploration_path, get_initial_path
 
 # Initialize Pygame
 pygame.init()
@@ -171,7 +171,7 @@ while running:
             running = False
 
     # Update game logic
-    pacman_pos, ghost_positions = update_game(graph, path, pacman_pos, ghost_positions)
+    pacman_pos, ghost_positions, food_positions, super_fruit_pos = update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_pos)
 
     # Draw the game
     draw_game(screen, game_map, pacman_pos, ghost_positions, food_positions, super_fruit_pos)
@@ -180,25 +180,4 @@ while running:
     pygame.display.flip()
     clock.tick(FPS)
 
-pygame.quit()
-
-# Main game loop
-running = True
-while running:
-    # Handle events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT: # If user closes the window
-            running = False
-            
-    # Ghost movement
-    ghost_positions = move_ghosts(graph, ghost_positions)
-            
-    # Pac-Man movement
-    update_pacman()
-        
-    # Update display
-    pygame.display.flip()
-    clock.tick(FPS) # Control movement speed
-    
-# Quit pygame properly
 pygame.quit()
