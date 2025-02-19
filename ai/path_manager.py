@@ -29,12 +29,10 @@ def find_frontiers(graph, visited):
 
     return frontiers
 
-def get_exploration_path(graph, pacman_pos, visited, ghost_positions, super_fruit_pos):
+def get_exploration_path(graph, pacman_pos, visited, ghost_positions, food_positions, super_fruit_pos=None):
     """
     Determines the safest path to an unexplored frontier while avoiding ghosts.
     """
-    # from game.game_logic import move_ghosts
-    
     frontiers = find_frontiers(graph, visited)
     if not frontiers:
         return []  # If no frontiers left, the maze is fully explored
@@ -56,3 +54,47 @@ def get_exploration_path(graph, pacman_pos, visited, ghost_positions, super_frui
         return smarter_a_star(graph, pacman_pos, {safest_frontier}, ghost_positions, game_map)
     
     return []
+
+from ai.search import a_star
+
+def escape_path(graph, pacman_pos, ghost_positions):
+    """
+    Uses a modified A* search where tiles near ghosts have higher movement costs.
+    Ensures Pac-Man prioritizes paths that avoid danger instead of just taking the shortest path.
+    """
+    danger_map = {}
+
+    # Assign dynamic weights to each tile based on proximity to ghosts
+    for ghost in ghost_positions:
+        for tile in graph.keys():  # Iterate over all valid tiles in the graph
+            if tile == ghost:
+                danger_map[tile] = float('inf')  # Ghost location is deadly
+            else:
+                ghost_distance = len(a_star(graph, tile, ghost))  # Use real movement distance
+
+                # Assign weights: Closer tiles to ghosts have higher penalties
+                if ghost_distance == 1:
+                    danger_map[tile] = 100  # Immediate danger
+                elif ghost_distance == 2:
+                    danger_map[tile] = 50  # High risk
+                elif ghost_distance <= 4:
+                    danger_map[tile] = 20  # Moderate risk
+                else:
+                    danger_map[tile] = 1  # Low risk, normal movement
+
+    # Modify A* to factor in danger weights
+    def weighted_heuristic(tile, goal):
+        return len(a_star(graph, tile, goal)) + danger_map.get(tile, 0)
+
+    # Find the safest tile (furthest from all ghosts)
+    safe_zones = [tile for tile in graph if tile not in danger_map or danger_map[tile] < 20]
+
+    if not safe_zones:
+        return []  # No escape route available
+
+    # Pick the safest tile that is farthest from ghosts
+    best_escape_tile = max(safe_zones, key=lambda tile: min(len(a_star(graph, tile, ghost)) for ghost in ghost_positions))
+
+    # Compute and return the best path to escape
+    return a_star(graph, pacman_pos, best_escape_tile)
+
