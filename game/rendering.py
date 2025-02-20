@@ -12,8 +12,8 @@ def draw_game(screen, game_map, pacman_pos, ghost_positions, food_positions, sup
             x, y = col * TILE_SIZE, row * TILE_SIZE
             if game_map[row][col] == "#":
                 pygame.draw.rect(screen, BLUE, (x, y, TILE_SIZE, TILE_SIZE))
-            elif game_map[row][col] == "F":
-                pygame.draw.circle(screen, PURPLE, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
+            # elif game_map[row][col] == "F":
+            #     pygame.draw.circle(screen, PURPLE, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
 
     # Draw food
     for food in food_positions:
@@ -24,6 +24,13 @@ def draw_game(screen, game_map, pacman_pos, ghost_positions, food_positions, sup
     for ghost in ghost_positions:
         x, y = ghost[1] * TILE_SIZE, ghost[0] * TILE_SIZE
         pygame.draw.circle(screen, WHITE, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
+        
+    # Draw ghosts
+    if super_fruit_pos:
+        print(super_fruit_pos)
+        x, y = super_fruit_pos[1] * TILE_SIZE, super_fruit_pos[0] * TILE_SIZE
+        
+        pygame.draw.circle(screen, PURPLE, (x + TILE_SIZE // 2, y + TILE_SIZE // 2), TILE_SIZE // 3)
 
     # Draw Pac-Man
     x, y = pacman_pos[1] * TILE_SIZE, pacman_pos[0] * TILE_SIZE

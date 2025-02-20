@@ -1,6 +1,8 @@
 from ai.search import smarter_a_star, build_graph
 from game.settings import TILE_SIZE
 from maps.level1 import game_map
+import heapq
+from heapq import heappop, heappush  # Min-heap for priority queue
 
 def get_initial_path(game_map):
     """ Initializes the game and gets Pac-Man's starting path """
@@ -43,7 +45,8 @@ def get_exploration_path(graph, pacman_pos, visited, ghost_positions, food_posit
 
     for frontier in frontiers:
         if frontier not in ghost_positions:  # Ensure we do not pick a ghost tile
-            distance = abs(frontier[0] - pacman_pos[0]) + abs(frontier[1] - pacman_pos[1])
+            # distance = abs(frontier[0] - pacman_pos[0]) + abs(frontier[1] - pacman_pos[1])
+            distance = len(a_star(graph, pacman_pos, frontier))
             if distance < min_distance:
                 min_distance = distance
                 safest_frontier = frontier
@@ -98,3 +101,45 @@ def escape_path(graph, pacman_pos, ghost_positions):
     # Compute and return the best path to escape
     return a_star(graph, pacman_pos, best_escape_tile)
 
+# Used to find our path to the superfruit
+def risk_aware_bfs(graph, pacman_pos, super_fruit_pos, ghost_positions, food_positions):
+    """
+    Uses Risk-Aware Best-First Search to guide Pac-Man towards the super fruit efficiently,
+    while avoiding high-risk ghost areas.
+    """
+    if not super_fruit_pos:
+        return []  # No fruit available
+
+    # Priority queue for best-first search
+    open_set = []
+    heapq.heappush(open_set, (0, pacman_pos))  # (priority, position)
+
+    came_from = {}  # Stores paths
+    cost_so_far = {pacman_pos: 0}  # Stores cost to reach each position
+
+    while open_set:
+        _, current = heapq.heappop(open_set)  # Get node with lowest priority
+
+        if current == super_fruit_pos:
+            # Reconstruct path
+            path = []
+            while current != pacman_pos:
+                path.append(current)
+                current = came_from[current]
+            path.reverse()
+            return path
+
+        for neighbor in graph.get(current, []):
+            # Calculate risk-aware heuristic
+            distance_to_fruit = len(a_star(graph, neighbor, super_fruit_pos))
+            ghost_penalty = sum(max(0, 5 - len(a_star(graph, neighbor, ghost))) for ghost in ghost_positions)
+            food_bonus = -2 if neighbor in food_positions else 0  # Prioritize paths that include food
+            
+            priority = distance_to_fruit + ghost_penalty + food_bonus  # Total weighted cost
+
+            if neighbor not in cost_so_far or priority < cost_so_far[neighbor]:
+                cost_so_far[neighbor] = priority
+                came_from[neighbor] = current
+                heapq.heappush(open_set, (priority, neighbor))
+
+    return []  # No valid path found

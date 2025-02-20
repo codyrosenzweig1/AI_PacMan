@@ -1,6 +1,6 @@
 import random
 from ai.search import smarter_a_star, a_star
-from ai.path_manager import get_exploration_path, escape_path
+from ai.path_manager import get_exploration_path, escape_path, risk_aware_bfs
 from game.settings import PATH_INDEX
 
 visited = set()
@@ -55,7 +55,7 @@ def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_
     if current_action == "escape":
         path = escape_path(graph, pacman_pos, ghost_positions)
     elif current_action == "super_fruit" and super_fruit_pos:
-        path = get_exploration_path(graph, pacman_pos, visited, ghost_positions, food_positions, {super_fruit_pos})
+        path = risk_aware_bfs(graph, pacman_pos, super_fruit_pos, ghost_positions, food_positions)
     else:
         path = get_exploration_path(graph, pacman_pos, visited, ghost_positions, food_positions)
 
@@ -66,13 +66,14 @@ def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_
         # update his score
         
     # Remove super_fruit if Pac-Man steps on food tile
-    if pacman_pos in super_fruit_pos:
-        super_fruit_pos.remove(pacman_pos) # PacMan eats the food
+    if pacman_pos == super_fruit_pos:
+        super_fruit_pos = None#.remove(pacman_pos) # PacMan eats the food
         # update his score
         # Change his state
 
     # Move Pac-Man along the path
     if path:
+        print(path)
         pacman_pos = path.pop(1)
         # print("Pacman pos:", pacman_pos)
         # print("path:,", path)
