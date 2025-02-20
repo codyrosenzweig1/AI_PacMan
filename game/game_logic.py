@@ -2,20 +2,32 @@ import random
 from ai.search import smarter_a_star, a_star
 from ai.path_manager import get_exploration_path, escape_path, risk_aware_bfs
 from game.settings import PATH_INDEX
+from ai.ghosts import Ghost
+from maps.level1 import game_map
 
-visited = set()
+visited = set()  # Keeps track of explored tiles
 path_index = 0
 commitment_counter = 0 # tracks how long pacman commits to an action
 current_action = "food" # Default to begin food collection
 escape_priority = 0
 
-def move_ghosts(graph, ghosts):
-    """
-    Moves ghosts randomly each turn. Ghosts stay within valid paths.
-    """
-    return [random.choice(graph[ghost]) if ghost in graph else ghost for ghost in ghosts]
+# Create ghost instances with names and starting positions
+# Tracks their current positions
+ghosts = [
+    Ghost("Blinky", (1, len(game_map[1])-2)),   # Top Right),
+    #Ghost("Pinky", (1, 1)), # Top Left
+    Ghost("Inky", (len(game_map)-2, len(game_map[1])-2)), #bottom Right
+    #Ghost("Clyde",  (len(game_map)-2, 1)) # Bottom LEft
+]
 
-visited = set()  # Keeps track of explored tiles
+def update_ghosts(graph, pacman_pos):
+    """
+    Updates all ghosts' movements based on their current mode.
+    """
+    for ghost in ghosts:
+        ghost.move_ghost(graph, pacman_pos)
+
+    return [ghost.position for ghost in ghosts]  # Return updated ghost positions
 
 def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_pos):
     """
@@ -79,7 +91,7 @@ def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_
         # print("path:,", path)
 
     # Move ghosts
-    ghost_positions = move_ghosts(graph, ghost_positions)
+    ghost_positions = update_ghosts(graph, pacman_pos)
 
     return pacman_pos, ghost_positions, food_positions, super_fruit_pos
 
@@ -114,8 +126,8 @@ def calculate_priorities(pacman_pos, ghost_positions, food_positions, super_frui
         distance = len(a_star(graph, pacman_pos, ghost))
         
         # Weighted contribution: closer ghosts contribute more, further ghosts contribute less
-        if distance == 0:
-            total_threat += 100  # Pac-Man is caught
+        if distance == 1:
+            total_threat += 80  # Pac-Man is caught
         elif distance <= 2:
             total_threat += 50 / distance  # High immediate danger
         elif distance <= 4:
