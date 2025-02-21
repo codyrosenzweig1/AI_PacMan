@@ -1,3 +1,4 @@
+import heapq
 from collections import deque
 from heapq import heappop, heappush  # Min-heap for priority queue
 
@@ -81,7 +82,7 @@ def get_food_density(graph, position, food_positions):
     food_count = sum(1 for neighbor in graph[position] if neighbor in food_positions)
     return -10 * food_count  # Negative cost encourages food-rich areas
 
-def compute_ghost_penalty(tile, ghost_positions, game_map):
+def compute_ghost_penalty(tile, ghost_positions, game_map, radius=5):
     """
     Calculates the penalty for a given tile based on its distance to ghosts.
     If a wall or super fruit blocks the ghost, no penalty is applied.
@@ -143,6 +144,39 @@ def smarter_a_star(graph, start, goal, ghost_positions, game_map):
                 heappush(open_list, (g_score + h_score, neighbor, path + [current]))
 
     return []  # No path found
+
+def compute_partial_mst(graph, start_pos, food_positions):
+    """
+    Computes a partial Minimum Spanning Tree (MST) from a given position.
+    - Uses Prim's algorithm to connect food clusters.
+    - Returns the total MST cost and number of food items in the MST.
+    """
+    if not food_positions:
+        return 0, 0  # No food, no density
+
+    visited = set()
+    min_heap = [(0, start_pos)]  # (cost, position)
+    total_cost = 0
+    food_count = 0
+
+    while min_heap:
+        cost, node = heapq.heappop(min_heap)
+
+        if node in visited:
+            continue
+        visited.add(node)
+
+        # Count only food nodes
+        if node in food_positions:
+            food_count += 1
+            total_cost += cost  # Add the cost of reaching this food
+
+        # Expand neighbors
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                heapq.heappush(min_heap, (len(a_star(graph, node, neighbor)), neighbor))
+
+    return total_cost, food_count
 
 def a_star(graph, start, goal):
     """

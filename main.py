@@ -144,7 +144,7 @@ import pygame
 from game.settings import WIDTH, HEIGHT, FPS
 from game.game_logic import update_game
 from game.rendering import draw_game
-from maps.level1 import game_map
+from maps.level2 import game_map
 from ai.path_manager import get_exploration_path, get_initial_path
 
 # Initialize Pygame

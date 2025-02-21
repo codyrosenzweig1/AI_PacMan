@@ -2,7 +2,7 @@ import random
 from ai.search import smarter_a_star, a_star
 from ai.path_manager import get_exploration_path, escape_path, risk_aware_bfs
 from game.settings import PATH_INDEX
-from ai.ghosts import Ghost
+from ai.ghosts import Ghost, update_ghosts
 from maps.level1 import game_map
 
 visited = set()  # Keeps track of explored tiles
@@ -10,24 +10,6 @@ path_index = 0
 commitment_counter = 0 # tracks how long pacman commits to an action
 current_action = "food" # Default to begin food collection
 escape_priority = 0
-
-# Create ghost instances with names and starting positions
-# Tracks their current positions
-ghosts = [
-    Ghost("Blinky", (1, len(game_map[1])-2)),   # Top Right),
-    #Ghost("Pinky", (1, 1)), # Top Left
-    Ghost("Inky", (len(game_map)-2, len(game_map[1])-2)), #bottom Right
-    #Ghost("Clyde",  (len(game_map)-2, 1)) # Bottom LEft
-]
-
-def update_ghosts(graph, pacman_pos):
-    """
-    Updates all ghosts' movements based on their current mode.
-    """
-    for ghost in ghosts:
-        ghost.move_ghost(graph, pacman_pos)
-
-    return [ghost.position for ghost in ghosts]  # Return updated ghost positions
 
 def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_pos):
     """
@@ -85,7 +67,8 @@ def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_
 
     # Move Pac-Man along the path
     if path:
-        print(path)
+        print("Pacman Pos;", pacman_pos)
+        print("Path:", path)
         pacman_pos = path.pop(1)
         # print("Pacman pos:", pacman_pos)
         # print("path:,", path)

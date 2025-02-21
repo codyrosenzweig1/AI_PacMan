@@ -1,6 +1,6 @@
 # Set up constants
 WIDTH, HEIGHT = 600, 600
-FPS = 6
+FPS = 3
 ROWS, COLS = 15, 15  # Grid size (15x15 tiles)
 TILE_SIZE = 40 # Grid square will be 40 x 40 pixels
 

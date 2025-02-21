@@ -1,4 +1,4 @@
-from ai.search import smarter_a_star, build_graph
+from ai.search import smarter_a_star, build_graph, compute_partial_mst
 from game.settings import TILE_SIZE
 from maps.level1 import game_map
 import heapq
@@ -143,3 +143,35 @@ def risk_aware_bfs(graph, pacman_pos, super_fruit_pos, ghost_positions, food_pos
                 heapq.heappush(open_set, (priority, neighbor))
 
     return []  # No valid path found
+
+
+def get_best_food_path(graph, pacman_pos, food_positions):
+    """
+    Finds the best path to food using MST-based density rather than just distance.
+    - Evaluates multiple anchor points and selects the best cluster.
+    """
+    anchor_points = [
+        pacman_pos,  
+        (1, len(game_map[1])-2),   # Top Right
+        (1, 1),     # Top Left
+        (len(game_map)-2, len(game_map[1])-2),    # Bottom Right
+        (len(game_map)-2, 1)     # Bottom Left
+        (len(game_map) // 2, len(game_map)[len(game_map) // 2] // 2) # Centre 
+    ]
+
+    best_path = None
+    best_score = -1  # Invalid score
+
+    for anchor in anchor_points:
+        total_cost, food_count = compute_partial_mst(graph, anchor, food_positions)
+        if food_count == 0:
+            continue  # Skip empty clusters
+
+        # Compute a density score: More food, lower cost = better
+        density_score = food_count / (total_cost + 1)  # Avoid division by zero
+
+        if density_score > best_score:
+            best_score = density_score
+            best_path = a_star(graph, pacman_pos, anchor)  # Move toward the best cluster
+
+    return best_path
