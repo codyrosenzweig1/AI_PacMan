@@ -56,12 +56,16 @@ def is_threat_clear(tile, ghost, game_map):
     Check if there is a clear path between a tile and a ghost.
     If a wall '#' or a super fruit 'F' is between them, the ghost is not a threat
     """
+    print(game_map)
     row_diff, col_diff = ghost[0] - tile[0], ghost[1] - tile[1]
     
     # If ghost is in the same row
     if row_diff == 0:
         step = 1 if col_diff > 0 else -1
         for col in range(tile[1] + step, ghost[1], step):
+            print("Game map tile:", tile)
+            print("Game map[tile[0]]", game_map[tile[0]])
+            print("col;", col)
             if game_map[tile[0]][col] in ('#', 'F'):  # Wall or super fruit blocks the threat
                 return False
             
