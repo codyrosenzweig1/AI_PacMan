@@ -1,7 +1,9 @@
 import heapq
 from collections import deque
 from heapq import heappop, heappush  # Min-heap for priority queue
+from ai.lookup_table import load_lookup_table
 
+lookup_table = load_lookup_table()  # Load precomputed distances
 
 def build_graph(maze):
     """
@@ -48,8 +50,11 @@ def build_graph(maze):
 # Smarter A * search which includes considerations about food density, ghost proximity
 
 def heuristic(a, b):
-    """ Manhattan Distance heuristic function for A* """
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+    # If the distance is precomputed, use it; otherwise fallback to Manhattan
+    if lookup_table and a in lookup_table and b in lookup_table[a]:
+        return lookup_table[a][b]
+    else:
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 def is_threat_clear(tile, ghost, game_map):
     """
