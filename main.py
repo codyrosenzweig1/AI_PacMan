@@ -144,7 +144,7 @@ import pygame
 from game.settings import WIDTH, HEIGHT, FPS
 from game.game_logic import update_game
 from game.rendering import draw_game
-from maps.level2 import game_map
+from maps.level1 import game_map
 from ai.path_manager import get_exploration_path, get_initial_path
 
 # Initialize Pygame
@@ -172,6 +172,9 @@ while running:
 
     # Update game logic
     pacman_pos, ghost_positions, food_positions, super_fruit_pos = update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_pos)
+
+    if pacman_pos in ghost_positions:
+        running = False
 
     # Draw the game
     draw_game(screen, game_map, pacman_pos, ghost_positions, food_positions, super_fruit_pos)
