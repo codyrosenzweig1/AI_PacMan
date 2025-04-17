@@ -22,11 +22,18 @@ class Ghost:
         Initializes a ghost with scatter and chase behavior.
         """
         self.name = name
+        self.start_pos = start_pos
         self.position = start_pos
         self.scatter_target = SCATTER_TARGETS.get(name, (1, 1))
         self.mode = "scatter"  # Start in Scatter Mode
         self.last_switch_time = time.time()  # Track last mode switch
         self.wander_timer = 0  # Tracks how long ghost randomly moves
+
+    def respawn(self):
+        self.position = self.start_pos # need to change to ghost area when we update map. 
+        self.mode = "scatter"  # Reset to Scatter Mode
+        self.last_switch_time = time.time()
+        self.wander_timer = 0 # reset wnder timer
 
     def update_mode(self):
         """
@@ -41,6 +48,7 @@ class Ghost:
         elif self.mode == "chase" and elapsed_time >= CHASE_DURATION:
             self.mode = "scatter"
             self.last_switch_time = current_time  # Reset timer
+        
 
     def move_ghost(self, graph, pacman_pos):
         """
@@ -88,12 +96,18 @@ class Ghost:
         if path and len(path) > 1:
             self.position = path[1]  # Move towards Pac-Man
 
-def update_ghosts(graph, pacman_pos):
+def update_ghosts(graph, pacman_pos, ghost_hunter):
     """
     Updates all ghosts' movements based on their current mode.
     """
     for ghost in ghosts:
         ghost.move_ghost(graph, pacman_pos)
+
+        if ghost.position == pacman_pos:
+            if ghost_hunter:
+                ghost.respawn()
+
+
 
     return [ghost.position for ghost in ghosts]  # Return updated ghost positions
 

@@ -2,6 +2,7 @@ import random
 from ai.search import smarter_a_star, a_star
 from ai.path_manager import get_exploration_path, escape_path, risk_aware_bfs
 from game.settings import PATH_INDEX
+from game.score_tracker import update_score, reset_score
 from ai.ghosts import Ghost, update_ghosts
 from maps.level1 import game_map
 
@@ -10,12 +11,16 @@ path_index = 0
 commitment_counter = 0 # tracks how long pacman commits to an action
 current_action = "food" # Default to begin food collection
 escape_priority = 0
+ghost_hunter = False
+hunter_timer = 0 
+HUNTER_DURATION = 50
 
-def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_pos):
+def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_pos, running):
     """
     Updates Pac-Man’s movement while tracking explored tiles and avoiding ghosts.
     """
     global visited, commitment_counter, current_action, escape_priority
+    global ghost_hunter, hunter_timer
 
     # Mark Pac-Man’s current position as visited
     visited.add(pacman_pos)
@@ -57,26 +62,38 @@ def update_game(graph, pacman_pos, ghost_positions, food_positions, super_fruit_
     # Remove food is Pac-Man steps on food tile
     if pacman_pos in food_positions:
         food_positions.remove(pacman_pos) # PacMan eats the food
-        # update his score
+        update_score("food") # update his score for eating food
         
     # Remove super_fruit if Pac-Man steps on food tile
     if pacman_pos == super_fruit_pos:
-        super_fruit_pos = None#.remove(pacman_pos) # PacMan eats the food
-        # update his score
+        super_fruit_pos = None #.remove(pacman_pos) # PacMan eats the food
+        update_score("super_fruit") # update his score for eating super fruit
+        ghost_hunter = True # PacMan becomes a ghost hunter
+        hunter_timer = HUNTER_DURATION # Set the timer for ghost hunting
         # Change his state
+
+    # Logic for when pacman collides with a ghost
+    if pacman_pos in ghost_positions:
+        if current_action == "ghost_hunter":
+            ghost_positions.remove(pacman_pos)
+            update_score("ghost_eaten")
+        else:
+            update_score("collision") # update his score for colliding with a ghost
+            running = False # Pacman Dies 
 
     # Move Pac-Man along the path
     if path:
-        print("Pacman Pos;", pacman_pos)
-        print("Path:", path)
+        update_score("step") # update his score for each step
         pacman_pos = path.pop(1)
-        # print("Pacman pos:", pacman_pos)
-        # print("path:,", path)
-
+        if ghost_hunter: # Logic for pacman hunter state managaement
+            hunter_timer -= 1
+            if hunter_timer <= 0:
+                ghost_hunter = False
+    
     # Move ghosts
-    ghost_positions = update_ghosts(graph, pacman_pos)
+    ghost_positions = update_ghosts(graph, pacman_pos, ghost_hunter)
 
-    return pacman_pos, ghost_positions, food_positions, super_fruit_pos
+    return pacman_pos, ghost_positions, food_positions, super_fruit_pos, running
 
 def calculate_priorities(pacman_pos, ghost_positions, food_positions, super_fruit_pos, last_escape_priority, graph):
     """
